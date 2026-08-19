@@ -13,6 +13,13 @@ Ce script crée la table `filmographie` (11 colonnes + `id` + `created_at`),
 active la RLS (row level security) et ajoute une seule policy : lecture
 publique (SELECT) pour le rôle `anon`. Aucun INSERT/UPDATE/DELETE public.
 
+> **Amendement du 19/08 23h5x (greffe, sur ta demande)** : la table accepte
+> désormais une colonne **`id` fournie par le CSV** (première colonne,
+> 1→1998). Rejoue le geste ① **en entier** (le script commence par un
+> `drop table` : il repart de zéro), importe un CSV **portant la colonne
+> id**, puis au geste ③ exécute d'abord le **contrôle 0** (`setval`) de
+> `02-controles.sql`.
+
 ## ② Importer les données
 
 Projet `cdatso` → **Table Editor** → table `filmographie` → **Insert** →

@@ -4,6 +4,17 @@
 -- attendu ne controle rien. A executer dans le SQL Editor de Supabase
 -- APRES l'import CSV, et a comparer ligne a ligne avec les attendus.
 
+-- controle 0 (AJOUTE 19/08 23h5x, greffe) -- APRES l'import, realigner la
+-- sequence d'identite sur le max des id importes, sinon le premier INSERT
+-- du temps 2 echouera en collision de cle primaire.
+-- attendu : 1998
+select setval(pg_get_serial_sequence('public.filmographie','id'),
+              (select max(id) from public.filmographie));
+
+-- attendu : 1998 (et id de 1 a 1998, tous distincts -- la cle primaire le garantit)
+select count(distinct id) as ids_distincts, min(id) as id_min, max(id) as id_max
+from public.filmographie;
+
 -- attendu : 1998
 select count(*) as nb_lignes
 from public.filmographie;
