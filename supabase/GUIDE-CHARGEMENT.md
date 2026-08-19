@@ -16,8 +16,10 @@ publique (SELECT) pour le rôle `anon`. Aucun INSERT/UPDATE/DELETE public.
 > **Amendement du 19/08 23h5x (greffe, sur ta demande)** : la table accepte
 > désormais une colonne **`id` fournie par le CSV** (première colonne,
 > 1→1998). Rejoue le geste ① **en entier** (le script commence par un
-> `drop table` : il repart de zéro), importe un CSV **portant la colonne
-> id**, puis au geste ③ exécute d'abord le **contrôle 0** (`setval`) de
+> `drop table` : il repart de zéro), importe **`donneesilmographie-utf8-v3.csv`**
+> (produit le 20/08 par `preparer-filmographie.py --avec-id` : colonne id
+> 1→1998 en tête, réalisateurs corrigés, virgule, sans BOM), puis au
+> geste ③ exécute d'abord le **contrôle 0** (`setval`) de
 > `02-controles.sql`.
 
 ## ② Importer les données

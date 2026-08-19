@@ -26,7 +26,11 @@ CLAUDE_DIR = REPO_DIR.parent.parent
 DEFAULT_SOURCE = CLAUDE_DIR / "CIN" / "bibliotheque" / "Filmographie" / "films-db-log-simplified-4-supabase-test.csv"
 DEFAULT_OUTPUT = REPO_DIR / "donnees" / "filmographie-utf8.csv"
 
-EXPECTED_SOURCE_SHA256 = "36357264EFDD1430A49E83CDDE4F70B0779A00F88F00F9DAF7ECD0A4BDCAE689"
+# SHA de la source APRES le correctif des 17 realisateurs a virgule
+# (gate AH du 20/08/2026, sauvegarde .avant-correctif-realisateurs a cote ;
+# ancienne valeur 36357264EFDD1430... perimee de droit -- amendement du
+# greffe sur gate "go v3 par le greffe").
+EXPECTED_SOURCE_SHA256 = "6740C009BC3AD9F5A3D3B91B98008CC4ACF142BDE5F088737CCC6D9A274F7EDA"
 
 EXPECTED_DATA_LINES = 1998
 EXPECTED_OUTPUT_COLUMNS = 11
@@ -161,7 +165,10 @@ def ecrire_sortie(chemin_sortie, entete, lignes_sortie):
             f.flush()
 
 
-def relire_et_controler(chemin_sortie, lignes_attendues):
+def relire_et_controler(chemin_sortie, lignes_attendues, avec_id=False):
+    # avec_id : la colonne id (1..N) precede les 11 colonnes -- tous les
+    # controles positionnels se decalent de "off" (amendement 20/08/2026).
+    off = 1 if avec_id else 0
     rapport = {}
 
     with open(chemin_sortie, "rb") as f:
@@ -174,8 +181,9 @@ def relire_et_controler(chemin_sortie, lignes_attendues):
         entete_relue = next(lecteur)
         lignes_relues = list(lecteur)
 
-    if entete_relue[0] != "realisateur":
-        raise ControleEchoue("controle 3 : premiere colonne attendue 'realisateur', lue " + repr(entete_relue[0]))
+    premiere_attendue = "id" if avec_id else "realisateur"
+    if entete_relue[0] != premiere_attendue:
+        raise ControleEchoue("controle 3 : premiere colonne attendue " + repr(premiere_attendue) + ", lue " + repr(entete_relue[0]))
     rapport["controle_3_entete"] = "OK : " + entete_relue[0]
 
     if len(lignes_relues) != lignes_attendues:
@@ -185,17 +193,18 @@ def relire_et_controler(chemin_sortie, lignes_attendues):
         )
     rapport["controle_1_lignes_ecrites"] = len(lignes_relues)
 
-    if len(entete_relue) != EXPECTED_OUTPUT_COLUMNS:
+    colonnes_attendues = EXPECTED_OUTPUT_COLUMNS + off
+    if len(entete_relue) != colonnes_attendues:
         raise ControleEchoue(
             "controle 2 : " + str(len(entete_relue)) + " colonnes en sortie, attendu "
-            + str(EXPECTED_OUTPUT_COLUMNS)
+            + str(colonnes_attendues)
         )
     for i, ligne in enumerate(lignes_relues):
-        if len(ligne) != EXPECTED_OUTPUT_COLUMNS:
+        if len(ligne) != colonnes_attendues:
             raise ControleEchoue(
                 "controle 2 : ligne " + str(i + 2) + " a " + str(len(ligne)) + " colonnes"
             )
-    rapport["controle_2_colonnes"] = EXPECTED_OUTPUT_COLUMNS
+    rapport["controle_2_colonnes"] = colonnes_attendues
 
     with open(chemin_sortie, "rb") as f:
         contenu_brut = f.read()
@@ -207,7 +216,7 @@ def relire_et_controler(chemin_sortie, lignes_attendues):
         raise ControleEchoue("controle 4 : aucune sequence UTF-8 d'accent (C3 A9) trouvee en sortie")
     rapport["controle_4_accents_utf8"] = "OK : sequence C3 A9 presente, decodage UTF-8 strict reussi"
 
-    lignes_802 = [l for l in lignes_relues if l[2] == EXPECTED_TRAP_802]
+    lignes_802 = [l for l in lignes_relues if l[2 + off] == EXPECTED_TRAP_802]
     if len(lignes_802) != 1:
         raise ControleEchoue(
             "controle 5 : " + str(len(lignes_802)) + " ligne(s) avec titre_original == "
@@ -215,7 +224,7 @@ def relire_et_controler(chemin_sortie, lignes_attendues):
         )
     rapport["controle_5_piege_802"] = "OK : 1 occurrence"
 
-    lignes_1935 = [l for l in lignes_relues if l[1] == EXPECTED_TRAP_1935]
+    lignes_1935 = [l for l in lignes_relues if l[1 + off] == EXPECTED_TRAP_1935]
     if len(lignes_1935) != 1:
         raise ControleEchoue(
             "controle 6 : " + str(len(lignes_1935)) + " ligne(s) avec titre == "
@@ -223,7 +232,7 @@ def relire_et_controler(chemin_sortie, lignes_attendues):
         )
     rapport["controle_6_piege_1935"] = "OK : 1 occurrence"
 
-    idx = {nom: i for i, nom in enumerate(OUTPUT_HEADER)}
+    idx = {nom: i + off for i, nom in enumerate(OUTPUT_HEADER)}
     n_categorie_film = sum(1 for l in lignes_relues if l[idx["categorie"]] == "Film")
     n_muet_vrai = sum(1 for l in lignes_relues if l[idx["muet"]] == "true")
     n_nb_vrai = sum(1 for l in lignes_relues if l[idx["nb"]] == "true")
@@ -246,6 +255,15 @@ def relire_et_controler(chemin_sortie, lignes_attendues):
             )
     rapport["controle_7_decomptes"] = decomptes
 
+    if avec_id:
+        ids = [l[0] for l in lignes_relues]
+        if any(not v.isdigit() for v in ids):
+            raise ControleEchoue("controle 7bis : id non numerique trouve")
+        valeurs = [int(v) for v in ids]
+        if valeurs != list(range(1, len(valeurs) + 1)):
+            raise ControleEchoue("controle 7bis : ids non contigus 1..N dans l'ordre naturel")
+        rapport["controle_7bis_ids"] = "OK : 1.." + str(len(valeurs)) + " contigus, ordre naturel"
+
     return rapport
 
 
@@ -253,6 +271,10 @@ def main():
     parser = argparse.ArgumentParser(description="Conversion filmographie CP1252 vers UTF-8 RFC4180")
     parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
     parser.add_argument("--sortie", type=Path, default=DEFAULT_OUTPUT)
+    # Option ajoutee le 20/08/2026 (greffe, gate "go v3 par le greffe") :
+    # emet une colonne id (1..N, ordre naturel de la source) en tete --
+    # requise par l'import Supabase depuis le correctif de table du 19/08.
+    parser.add_argument("--avec-id", action="store_true")
     args = parser.parse_args()
 
     print("preparer-filmographie.py -- interpreter Python 3.12.10 (declare)")
@@ -286,7 +308,11 @@ def main():
         lignes_converties = []
         for numero, ligne in enumerate(lignes_source, start=2):
             lignes_converties.append(convertir_ligne(ligne, numero))
-        ecrire_sortie(args.sortie, OUTPUT_HEADER, lignes_converties)
+        entete_sortie = OUTPUT_HEADER
+        if args.avec_id:
+            entete_sortie = ["id"] + OUTPUT_HEADER
+            lignes_converties = [[str(i)] + l for i, l in enumerate(lignes_converties, start=1)]
+        ecrire_sortie(args.sortie, entete_sortie, lignes_converties)
     except ControleEchoue as exc:
         print("ECHEC DE CONVERSION : " + str(exc))
         sys.exit(1)
@@ -295,7 +321,7 @@ def main():
     print("")
     print("etape 4/4 : relecture programmatique et controles numerotes 1 a 8")
     try:
-        rapport = relire_et_controler(args.sortie, EXPECTED_DATA_LINES)
+        rapport = relire_et_controler(args.sortie, EXPECTED_DATA_LINES, args.avec_id)
     except ControleEchoue as exc:
         print("CONTROLE ECHOUE : " + str(exc))
         sys.exit(1)
