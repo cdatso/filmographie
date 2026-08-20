@@ -1,62 +1,45 @@
 -- 02-controles.sql
 -- Rejoue sur la table chargee les controles de outils/preparer-filmographie.py.
--- Chaque requete porte son attendu en commentaire -- une requete sans
--- attendu ne controle rien. A executer dans le SQL Editor de Supabase
--- APRES l'import CSV, et a comparer ligne a ligne avec les attendus.
+-- Prototype d'apprentissage BKL-FOR-003.
+--
+-- CONSOLIDE le 20/08/2026 (greffe, GATE-AH "go consolide 02") : le SQL
+-- Editor de Supabase n'affiche que le resultat de la DERNIERE requete
+-- d'un script (constat AH du 19/08 au soir) -- l'ancienne forme a une
+-- requete par controle n'affichait donc que le dernier. La forme
+-- consolidee rend LES DOUZE CONTROLES dans UN SEUL tableau
+-- (ordre / controle / mesure / attendu) : mesure = attendu sur chaque
+-- ligne, la table est certifiee. Le controle 0 (setval) est INCLUS :
+-- il realigne la sequence d'identite sur max(id) -- sans lui, le
+-- premier INSERT du temps 2 echouerait en collision de cle primaire.
+-- CORRECTION du meme gate : l'attendu de l'ancien controle "Carnet de
+-- notes" disait "exactement 1 ligne" -- FAUX (ecart de la session (a),
+-- releve par AH le 19/08) : le LIKE attrape 2 films (Pasolini 1462 et
+-- Wenders 1934, guillemets intacts). Attendu corrige : 2.
 
--- controle 0 (AJOUTE 19/08 23h5x, greffe) -- APRES l'import, realigner la
--- sequence d'identite sur le max des id importes, sinon le premier INSERT
--- du temps 2 echouera en collision de cle primaire.
--- attendu : 1998
-select setval(pg_get_serial_sequence('public.filmographie','id'),
-              (select max(id) from public.filmographie));
+select 0 as ordre, 'setval (realigne la sequence)' as controle,
+       setval(pg_get_serial_sequence('public.filmographie','id'),
+              (select max(id) from public.filmographie))::text as mesure,
+       '1998' as attendu
+union all select 1, 'nb_lignes', count(*)::text, '1998' from public.filmographie
+union all select 2, 'ids distincts', count(distinct id)::text, '1998' from public.filmographie
+union all select 3, 'id min - max', min(id)::text || ' - ' || max(id)::text, '1 - 1998' from public.filmographie
+union all select 4, 'annee vide', count(*)::text, '18' from public.filmographie where annee is null
+union all select 5, 'annee_source vide', count(*)::text, '11' from public.filmographie where annee_source is null or annee_source = ''
+union all select 6, 'duree_min vide', count(*)::text, '17' from public.filmographie where duree_min is null
+union all select 7, 'muet vrai', count(*)::text, '107' from public.filmographie where muet = true
+union all select 8, 'nb vrai', count(*)::text, '396' from public.filmographie where nb = true
+union all select 9, 'categorie Film', count(*)::text, '1693' from public.filmographie where categorie = 'Film'
+union all select 10, 'piege Terminator 2', count(*)::text, '1' from public.filmographie where titre_original = 'Terminator 2; Judgment Day'
+union all select 11, 'pieges Carnet de notes', count(*)::text, '2 (Pasolini + Wenders)' from public.filmographie where titre like 'Carnet de notes%'
+order by ordre;
 
--- attendu : 1998 (et id de 1 a 1998, tous distincts -- la cle primaire le garantit)
-select count(distinct id) as ids_distincts, min(id) as id_min, max(id) as id_max
-from public.filmographie;
-
--- attendu : 1998
-select count(*) as nb_lignes
-from public.filmographie;
-
--- attendu : 18
-select count(*) as annee_vide
-from public.filmographie
-where annee is null;
-
--- attendu : 11
-select count(*) as annee_source_vide
-from public.filmographie
-where annee_source is null or annee_source = '';
-
--- attendu : 17
-select count(*) as duree_min_vide
-from public.filmographie
-where duree_min is null;
-
--- attendu : 107
-select count(*) as muet_vrai
-from public.filmographie
-where muet = true;
-
--- attendu : 396
-select count(*) as nb_vrai
-from public.filmographie
-where nb = true;
-
--- attendu : Film = 1693 en tete de liste (ordre decroissant)
-select categorie, count(*) as nb
-from public.filmographie
-group by categorie
-order by nb desc;
-
--- attendu : exactement 1 ligne, titre_original = 'Terminator 2; Judgment Day'
-select id, realisateur, titre, titre_original
-from public.filmographie
-where titre_original = 'Terminator 2; Judgment Day';
-
--- attendu : exactement 1 ligne, titre commencant par 'Carnet de notes'
--- (guillemets internes conserves autour de Vetements et villes)
-select id, realisateur, titre
-from public.filmographie
-where titre like 'Carnet de notes%';
+-- DETAIL OPTIONNEL (a executer SEPAREMENT -- selectionner le bloc puis
+-- Run ; lance avec tout le script, seul ce resultat s'afficherait) :
+--
+-- select id, realisateur, titre, titre_original
+-- from public.filmographie
+-- where titre_original = 'Terminator 2; Judgment Day'
+--    or titre like 'Carnet de notes%'
+-- order by id;
+-- attendu : 3 lignes -- 802-ish Terminator 2 (le ; dans le titre
+-- original), 1462 Pasolini, 1934 Wenders (guillemets conserves).
