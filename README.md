@@ -17,11 +17,33 @@ Question de fin explicite, non tranchée ici : garder / migrer / éteindre.
    typées).
 3. **Table Supabase** — `supabase\` contient le script de création de
    table, les contrôles post-import et le guide de chargement.
-4. **Page statique** — régénérable à partir de la table (mandat séparé,
-   temps (b) de BKL-FOR-003).
+4. **Page statique** — `index.html`, à la racine de ce dépôt, régénérée
+   par `outils\generer-page.py` depuis la table Supabase (lecture seule,
+   `GET` uniquement). Publiée sous
+   `https://www.cdatso.be/filmographie/` (geste d'AH : création du dépôt
+   GitHub, remote, push, activation de Pages — voir la note de remise du
+   temps (b), `claude-config\mandats\FOR\BKL-FOR-003\`).
 
 **La source de vérité est la table Supabase.** La page publique n'en est
-qu'un dérivé, régénérable.
+qu'un dérivé, régénérable — jamais éditée à la main.
+
+### Régénérer la page
+
+```
+python outils\generer-page.py --acces <chemin du fichier hors dépôt contenant l'URL et la clé publique>
+```
+
+ou, sans fichier d'accès :
+
+```
+python outils\generer-page.py --url <URL du projet Supabase> --cle <clé publique>
+```
+
+Le script pagine automatiquement, ne rend rien tant que le total mesuré
+n'est pas confirmé, et écrit `index.html` à la racine du dépôt (aucun
+paramètre `--sortie` requis pour le cas normal). Aucune valeur de clé
+n'est fournie ici : la clé publique (`publishable`, remplaçante de
+l'ancienne clé `anon`) reste dans le fichier d'accès hors dépôt.
 
 ## Portée
 
