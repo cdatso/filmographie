@@ -27,7 +27,7 @@ publique (SELECT) pour le rôle `anon`. Aucun INSERT/UPDATE/DELETE public.
 Projet `cdatso` → **Table Editor** → table `filmographie` → **Insert** →
 **Import data from CSV** → sélectionne :
 
-`C:\Users\cdats\Claude\Projects\filmographie\donnees\filmographie-utf8.csv`
+`C:\Users\cdats\Claude\SRV\filmographie\donnees\filmographie-utf8.csv`
 
 1 998 lignes, encodage UTF-8 sans BOM, séparateur virgule (RFC4180). Si
 l'importeur te propose un mapping de colonnes, vérifie qu'il retient les
