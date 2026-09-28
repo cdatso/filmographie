@@ -1,0 +1,13 @@
+ordre,controle,mesure,attendu
+0,setval (realigne la sequence),1998,1998
+1,nb_lignes,1998,1998
+2,ids distincts,1998,1998
+3,id min - max,1 - 1998,1 - 1998
+4,annee vide,18,18
+5,annee_source vide,11,11
+6,duree_min vide,17,17
+7,muet vrai,107,107
+8,nb vrai,396,396
+9,categorie Film,1693,1693
+10,piege Terminator 2,1,1
+11,pieges Carnet de notes,2,2 (Pasolini + Wenders)
