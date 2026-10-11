@@ -242,6 +242,7 @@ header { max-width: 64rem; margin: 0 auto 1.5rem; }
   color: #7d6629;
   margin: 0 0 0.8rem;
 }
+.mark a { color: inherit; }
 h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 400; margin: 0; }
 main { max-width: 64rem; margin: 0 auto; }
 .table-wrap {
@@ -316,7 +317,7 @@ def construire_page(lignes, horodatage):
 </head>
 <body>
   <header>
-    <p class="mark">Christo Datso</p>
+    <p class="mark"><a href="https://www.cdatso.be/">&larr; Christo Datso</a></p>
     <h1>Filmographie</h1>
   </header>
   <main>
